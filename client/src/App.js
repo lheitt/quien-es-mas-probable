@@ -1,10 +1,12 @@
-import logo from "./logo.svg";
 import "./App.css";
 import io from "socket.io-client";
-import { useEffect } from "react";
+import db from "./firebase";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { NativeBaseProvider, Box } from "native-base";
 
 function App() {
-    useEffect(() => {
+    useEffect(async() => {
         const socket = io("http://localhost:3001", {
             reconnectionDelayMax: 10000,
             auth: {
@@ -14,25 +16,18 @@ function App() {
                 "my-key": "my-value",
             },
         });
+
+        const querySnapshot = await getDocs(collection(db, "questions"));
+        querySnapshot.forEach((doc) => {
+            console.log(doc);
+            console.log(`${doc.id} => ${Object.keys(doc._document.data.value.mapValue.fields)}`);
+        });
     }, []);
 
     return (
-        <div className="App">
-            <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo" />
-                <p>
-                    Edit <code>src/App.js</code> and save to reload.
-                </p>
-                <a
-                    className="App-link"
-                    href="https://reactjs.org"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Learn React
-                </a>
-            </header>
-        </div>
+        <NativeBaseProvider>
+            <Box>Hello world</Box>
+        </NativeBaseProvider>
     );
 }
 
