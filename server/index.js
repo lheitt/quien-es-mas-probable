@@ -32,9 +32,16 @@ app.use("/", routes);
 
 //socket.io
 io.on("connection", (socket) => {
-    console.log("a user connected");
-    socket.on("disconnect", () => {
-        console.log("a user disconnected");
+    socket.join("room1");
+    console.log(socket.id, "user connected");
+
+    socket.on("renderedQuestionServer", (arg) => {
+        io.to("room1").emit("renderedQuestionClient", arg);
+        console.log(arg, "renderedQuestionClient");
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.log(socket.id, "user disconnected", reason);
     });
 });
 
