@@ -1,9 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Container, CssBaseline, TextField } from "@mui/material";
+import { Container, CssBaseline, TextField } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 
+export let socket;
+
 function Landing() {
+    useEffect(() => {
+        socket = io("http://localhost:3001", {
+            // reconnectionDelayMax: 10000,
+            // auth: {
+            //     token: "123",
+            // },
+            // query: {
+            //     "my-key": "my-value",
+            // },
+        });
+
+        // socket.on("connect", () => {
+        //     console.log(socket.id);
+        // });
+    }, []);
+
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
@@ -22,6 +41,10 @@ function Landing() {
     const handleSubmit = (e) => {
         setLoading(true);
         const timer = setTimeout(() => {
+            socket.emit("newUser", {
+                name: input.name,
+                socketId: socket.id
+            });
             navigate("/game");
         }, 2000);
         return () => clearTimeout(timer);

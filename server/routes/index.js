@@ -14,7 +14,7 @@ const serviceAccount = {
     auth_uri: process.env.NODE_FIREBASE_AUTH_URI,
     token_uri: process.env.NODE_FIREBASE_TOKEN_URI,
     auth_provider_x509_cert_url: process.env.NODE_FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-    client_x509_cert_url: process.env.NODE_FIREBASE_CLIENT_X509_CERT_URL
+    client_x509_cert_url: process.env.NODE_FIREBASE_CLIENT_X509_CERT_URL,
 };
 
 initializeApp({
@@ -24,14 +24,18 @@ initializeApp({
 const db = getFirestore();
 
 router.post("/new-question", async (req, res, next) => {
-    const { question } = req.body;
+    const { question, username } = req.body;
     try {
-        const docRef = await db.collection("questions").doc("cat1").update({
-            [question]: {
-                timestamp: FieldValue.serverTimestamp()
-            }
-        });
-        
+        const docRef = await db
+            .collection("questions")
+            .doc("cat1")
+            .update({
+                [question]: {
+                    addedBy: username,
+                    timestamp: FieldValue.serverTimestamp(),
+                },
+            });
+
         res.send("new question added to firebase db");
     } catch (error) {
         next(error);
