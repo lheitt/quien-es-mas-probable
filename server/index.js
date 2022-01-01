@@ -74,6 +74,6 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(3001, () => {
-    console.log(cyan, "listening on *:3001");
+server.listen(process.env.PORT || 3001, () => {
+    console.log(cyan, process.env.PORT ? `listening on ${process.env.PORT}` : `listening on 3001`);
 });

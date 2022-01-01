@@ -5,10 +5,11 @@ import { Container, CssBaseline, TextField } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 
 export let socket;
+const ENDPOINT = process.env.REACT_APP_API || "http://localhost:3001";
 
 function Landing() {
     useEffect(() => {
-        socket = io("http://localhost:3001", {
+        socket = io(ENDPOINT, {
             // reconnectionDelayMax: 10000,
             // auth: {
             //     token: "123",
@@ -43,7 +44,7 @@ function Landing() {
         const timer = setTimeout(() => {
             socket.emit("newUser", {
                 name: input.name,
-                socketId: socket.id
+                socketId: socket.id,
             });
             navigate("/game");
         }, 2000);
@@ -70,11 +71,7 @@ function Landing() {
                     name="name"
                     autoComplete="true"
                     label="Nombre"
-                    helperText={
-                        input.name.length > 0
-                            ? "Será visible para los demás jugadores"
-                            : "Completa el campo"
-                    }
+                    helperText={input.name.length > 0 ? "Será visible para los demás jugadores" : "Completa el campo"}
                     onChange={handleChange}
                 />
                 <LoadingButton

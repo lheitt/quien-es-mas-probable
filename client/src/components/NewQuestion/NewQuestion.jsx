@@ -30,7 +30,7 @@ function NewQuestion() {
         setLoading(true);
         const username = usernames.filter((user) => user.socketId === socket.id)[0].name;
 
-        await axios.post("http://localhost:3001/new-question", {
+        await axios.post("/new-question", {
             question: input.question,
             username: username,
         });
