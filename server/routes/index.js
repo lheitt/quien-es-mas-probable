@@ -26,7 +26,7 @@ const db = getFirestore();
 router.get("/questions", async (req, res, next) => {
     try {
         const snapshot = await db.collection("questions").get();
-        
+
         snapshot.forEach((doc) => {
             // console.log(doc.id)
             questions = Object.keys(doc.data()).sort();
@@ -52,6 +52,28 @@ router.post("/new-question", async (req, res, next) => {
             });
 
         res.send("new question added to firebase db");
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post("/new-questions", async (req, res, next) => {
+    const { questions, username } = req.body;
+    console.log(questions);
+    try {
+        const batch = db.batch();
+        const sfRef = db.collection("questions").doc("cat1");
+        questions.forEach((question) => {
+            batch.update(sfRef, {
+                [question]: {
+                    addedBy: username,
+                    timestamp: FieldValue.serverTimestamp(),
+                },
+            });
+        });
+        await batch.commit();
+
+        res.send(`${questions.length} new questions added to firebase db`);
     } catch (error) {
         next(error);
     }

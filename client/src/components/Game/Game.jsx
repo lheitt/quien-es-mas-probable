@@ -28,6 +28,7 @@ function Game() {
         socket.on("reload", (users) => {
             setUsers(users);
             usernames = users;
+            getQuestions();
         });
 
         socket.on("addingNewQuestion", (user) => {
@@ -126,6 +127,7 @@ function Game() {
                     >
                         {users.map((user, key) => (
                             <Box
+                                key={key}
                                 sx={{
                                     display: "flex",
                                     flexDirection: "column",
@@ -136,7 +138,6 @@ function Game() {
                                 }}
                             >
                                 <Button
-                                    key={key}
                                     variant="contained"
                                     size="large"
                                     color={userSelected === key ? "success" : "error"}
@@ -178,6 +179,14 @@ function Game() {
                         <Button variant="contained" onClick={handleSubmit}>
                             {renderedQuestion === "" ? "PRIMERA PREGUNTA" : "SIGUIENTE PREGUNTA"}
                         </Button>
+
+                        {renderedQuestion !== "" ? (
+                            <Typography variant="subtitle1" gutterBottom>
+                                {`${renderedQuestion + 1}/${questions.length}`}
+                            </Typography>
+                        ) : (
+                            <></>
+                        )}
                     </Box>
                 ) : (
                     <Box sx={{ display: "flex" }}>
