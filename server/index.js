@@ -40,6 +40,7 @@ app.use("/", routes);
 //socket.io
 let users = [];
 let renderedQuestionServer = "";
+let addingNewQuestionUsername = undefined;
 
 io.on("connection", (socket) => {
     socket.join("room1");
@@ -49,6 +50,17 @@ io.on("connection", (socket) => {
         if (bolean) {
             io.to("room1").emit("newUser", users);
             io.to("room1").emit("renderedQuestionClient", renderedQuestionServer);
+            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
+        }
+    });
+
+    socket.on("addingNewQuestion", (socketId) => {
+        if (socketId) {
+            addingNewQuestionUsername = users.filter((user) => user.socketId === socketId)[0].name;
+            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
+        } else {
+            addingNewQuestionUsername = undefined;
+            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
         }
     });
 

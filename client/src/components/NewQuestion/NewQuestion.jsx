@@ -16,6 +16,11 @@ function NewQuestion() {
         question: "",
     });
 
+    const backButtonPressed = () => {
+        socket.emit("addingNewQuestion", undefined);
+        navigate("/game");
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setInput({
@@ -56,7 +61,7 @@ function NewQuestion() {
             >
                 <Fab
                     sx={{ position: "absolute", left: "10vw", top: "10vh" }}
-                    onClick={() => navigate("/game")}
+                    onClick={() => backButtonPressed()}
                     color="primary"
                     aria-label="Volver al juego"
                 >

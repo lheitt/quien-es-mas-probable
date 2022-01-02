@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../Landing/Landing";
-import db from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
-import { Typography, Button, Container, CssBaseline, Stack, Fab, Box, CircularProgress } from "@mui/material";
+import { Typography, Button, Container, CssBaseline, Fab, Box, CircularProgress } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import AddIcon from "@mui/icons-material/Add";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import axios from "axios";
 
 // let socket;
 export let usernames;
 
 function Game() {
-    useEffect(async () => {
+    useEffect(() => {
         socket.emit("reload", true);
 
         socket.on("renderedQuestionClient", (renderedQuestion) => {
@@ -29,24 +30,43 @@ function Game() {
             usernames = users;
         });
 
-        const querySnapshot = await getDocs(collection(db, "questions"));
-        querySnapshot.forEach((doc) => {
-            // console.log(doc, "_DOC");
-            // console.log(Object.keys(doc._document.data.value.mapValue.fields).sort());
-            setQuestions(Object.keys(doc._document.data.value.mapValue.fields).sort());
+        socket.on("addingNewQuestion", (user) => {
+            setAddingNewQuestion({
+                username: user,
+            });
+            setUserSelected(undefined);
         });
+
+        getQuestions();
     }, []);
 
+    const getQuestions = async () => {
+        const res = await axios.get("/questions");
+        setQuestions(res.data);
+    };
+
     const navigate = useNavigate();
+    const matches = useMediaQuery("(min-width:500px)");
 
     const [users, setUsers] = useState([]);
     const [questions, setQuestions] = useState([]);
     const [renderedQuestion, setRenderedQuestion] = useState("");
     const [userSelected, setUserSelected] = useState(undefined);
+    const [addingNewQuestion, setAddingNewQuestion] = useState(undefined);
 
     const userButtonPressed = (key) => {
         if (userSelected === key) return setUserSelected(undefined);
         setUserSelected(key);
+    };
+
+    const homeButtonPressed = () => {
+        socket.disconnect();
+        navigate("/");
+    };
+
+    const addNewQuestionButtonPressed = () => {
+        socket.emit("addingNewQuestion", socket.id);
+        navigate("/new-question");
     };
 
     const handleSubmit = (e) => {
@@ -75,29 +95,65 @@ function Game() {
                 }}
             >
                 <Fab
-                    sx={{ position: "absolute", left: "85vw", top: "10vh" }}
-                    onClick={() => navigate("/new-question")}
+                    sx={{ position: "absolute", left: matches ? "85vw" : "75vw", top: "10vh" }}
+                    onClick={() => addNewQuestionButtonPressed()}
                     color="primary"
                     aria-label="Añadir nueva pregunta"
                 >
                     <AddIcon />
                 </Fab>
 
+                <Fab
+                    sx={{ position: "absolute", left: "10vw", top: "10vh" }}
+                    onClick={() => homeButtonPressed()}
+                    color="primary"
+                    aria-label="Volver al inicio"
+                >
+                    <HomeRoundedIcon />
+                </Fab>
+
                 {users.length !== 0 ? (
-                    <Stack spacing={10} direction="row" sx={{ marginBottom: "4em" }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            gap: "2em",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginBottom: "4em",
+                        }}
+                    >
                         {users.map((user, key) => (
-                            <Button
-                                key={key}
-                                variant="contained"
-                                size="large"
-                                color={userSelected === key ? "success" : "error"}
-                                onClick={() => userButtonPressed(key)}
-                                sx={{ fontSize: "2em" }}
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    flexWrap: "wrap",
+                                    gap: ".5em",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
                             >
-                                {user.name}
-                            </Button>
+                                <Button
+                                    key={key}
+                                    variant="contained"
+                                    size="large"
+                                    color={userSelected === key ? "success" : "error"}
+                                    onClick={() => userButtonPressed(key)}
+                                    sx={{ fontSize: "2em" }}
+                                >
+                                    {user.name}
+                                </Button>
+
+                                {addingNewQuestion && addingNewQuestion.username === user.name ? (
+                                    <Typography variant="overline">Añadiendo una nueva pregunta ⌛</Typography>
+                                ) : (
+                                    <></>
+                                )}
+                            </Box>
                         ))}
-                    </Stack>
+                    </Box>
                 ) : (
                     <></>
                 )}
