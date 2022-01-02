@@ -48,7 +48,7 @@ io.on("connection", (socket) => {
 
     socket.on("reload", (bolean) => {
         if (bolean) {
-            io.to("room1").emit("newUser", users);
+            io.to("room1").emit("reload", users);
             io.to("room1").emit("renderedQuestionClient", renderedQuestionServer);
             io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
         }
@@ -74,7 +74,7 @@ io.on("connection", (socket) => {
     socket.on("renderedQuestionServer", (renderedQuestion) => {
         io.to("room1").emit("renderedQuestionClient", renderedQuestion);
         renderedQuestionServer = renderedQuestion;
-        console.log(renderedQuestionServer, "renderedQuestion");
+        // console.log(renderedQuestionServer, "renderedQuestion");
     });
 
     socket.on("disconnect", (reason) => {
