@@ -71,8 +71,13 @@ function Landing() {
                     name="name"
                     autoComplete="true"
                     label="Nombre"
-                    helperText={input.name.length > 0 ? "Será visible para los demás jugadores" : "Completa el campo"}
+                    helperText={
+                        input.name.length > 0
+                            ? "Será visible para los demás jugadores"
+                            : "Completa el campo para comenzar el juego"
+                    }
                     onChange={handleChange}
+                    sx={{ width: "18em" }}
                 />
                 <LoadingButton
                     variant="contained"
