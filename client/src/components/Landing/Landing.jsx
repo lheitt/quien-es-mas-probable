@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-import { Container, CssBaseline, TextField } from "@mui/material";
+import { ThemeProvider } from "@emotion/react";
+import { createTheme, Container, CssBaseline, Fab, TextField } from "@mui/material";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LoadingButton from "@mui/lab/LoadingButton";
 
 export let socket;
@@ -27,9 +30,17 @@ function Landing() {
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
+    const [isDark, setIsDark] = useState(false);
     const [input, setInput] = useState({
         name: "",
     });
+
+    const theme = createTheme({
+            palette: {
+                mode: isDark ? "dark" : "light",
+            },
+        })
+    ;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -52,46 +63,59 @@ function Landing() {
     };
 
     return (
-        <React.Fragment>
-            <CssBaseline />
-            <Container
-                maxWidth="md"
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100vh",
-                    bgcolor: "background.default",
-                    color: "text.primary",
-                }}
-            >
-                <TextField
-                    error={input.name.length > 0 ? false : true}
-                    name="name"
-                    autoComplete="true"
-                    label="Nombre"
-                    helperText={
-                        input.name.length > 0
-                            ? "Será visible para los demás jugadores"
-                            : "Completa el campo para comenzar el juego"
-                    }
-                    onChange={handleChange}
-                    sx={{ width: "18em" }}
-                />
-                <LoadingButton
-                    variant="contained"
-                    onClick={handleSubmit}
-                    loading={loading}
-                    disabled={input.name.length > 0 ? false : true}
+        <ThemeProvider theme={theme}>
+            <React.Fragment>
+                <CssBaseline />
+                <Container
+                    maxWidth="md"
                     sx={{
-                        marginTop: "1em",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100vh",
+                        bgcolor: "background.default",
+                        color: "text.primary",
                     }}
                 >
-                    Jugar
-                </LoadingButton>
-            </Container>
-        </React.Fragment>
+                    <Fab
+                        sx={{ position: "absolute", top: "10vh" }}
+                        onClick={() => setIsDark(!isDark)}
+                        color="primary"
+                        aria-label="Cambiar tema"
+                    >
+                        {
+                            isDark ? <LightModeRoundedIcon /> : <DarkModeRoundedIcon />
+                        }
+                    </Fab>
+
+                    <TextField
+                        error={input.name.length > 0 ? false : true}
+                        name="name"
+                        autoComplete="true"
+                        label="Nombre"
+                        helperText={
+                            input.name.length > 0
+                                ? "Será visible para los demás jugadores"
+                                : "Completa el campo para comenzar el juego"
+                        }
+                        onChange={handleChange}
+                        sx={{ width: "18em" }}
+                    />
+                    <LoadingButton
+                        variant="contained"
+                        onClick={handleSubmit}
+                        loading={loading}
+                        disabled={input.name.length > 0 ? false : true}
+                        sx={{
+                            marginTop: "1em",
+                        }}
+                    >
+                        Jugar
+                    </LoadingButton>
+                </Container>
+            </React.Fragment>
+        </ThemeProvider>
     );
 }
 
