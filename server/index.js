@@ -38,51 +38,87 @@ app.use((err, req, res, next) => {
 app.use("/", routes);
 
 //socket.io
-let users = [];
-let renderedQuestionServer = "";
-let addingNewQuestionUsername = undefined;
+let users = {};
+let renderedQuestionServer = {};
 
 io.on("connection", (socket) => {
-    socket.join("room1");
-    console.log(yellow, socket.id, "user connected");
-
-    socket.on("reload", (bolean) => {
-        if (bolean) {
-            io.to("room1").emit("reload", users);
-            io.to("room1").emit("renderedQuestionClient", renderedQuestionServer);
-            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
-        }
-    });
-
-    socket.on("addingNewQuestion", (socketId) => {
-        if (socketId) {
-            addingNewQuestionUsername = users.filter((user) => user.socketId === socketId)[0].name;
-            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
-        } else {
-            addingNewQuestionUsername = undefined;
-            io.to("room1").emit("addingNewQuestion", addingNewQuestionUsername);
+    socket.on("reload", (props) => {
+        if (props.bolean) {
+            let usersRoom;
+            for (const room in users) {
+                users[room].forEach((user) => {
+                    if (user.socketId === props.socketId) usersRoom = room;
+                });
+                if (usersRoom !== undefined) break;
+            }
+            io.to(usersRoom).emit("reload", users[usersRoom]);
+            io.to(usersRoom).emit("renderedQuestionClient", renderedQuestionServer[usersRoom]);
         }
     });
 
     socket.on("newUser", (newUser) => {
-        users.push(newUser);
+        socket.join(newUser.room);
+        console.log(yellow, `user ${newUser.name} connected to room ${newUser.room}`);
+
+        if (users.hasOwnProperty(newUser.room)) {
+            users[newUser.room].push({
+                name: newUser.name,
+                socketId: newUser.socketId,
+            });
+        } else {
+            users[newUser.room] = [
+                {
+                    name: newUser.name,
+                    socketId: newUser.socketId,
+                },
+            ];
+        }
+
         console.log("users", users);
-        io.to("room1").emit("newUser", users);
-        io.to("room1").emit("renderedQuestionClient", renderedQuestionServer);
+        console.log("renderedQuestion", renderedQuestionServer);
+        io.to(newUser.room).emit("newUser", users[newUser.room]);
+        io.to(newUser.room).emit("renderedQuestionClient", renderedQuestionServer[newUser.room]);
     });
 
-    socket.on("renderedQuestionServer", (renderedQuestion) => {
-        io.to("room1").emit("renderedQuestionClient", renderedQuestion);
-        renderedQuestionServer = renderedQuestion;
+    socket.on("renderedQuestionServer", (props) => {
+        let usersRoom;
+        for (const room in users) {
+            users[room].forEach((user) => {
+                if (user.socketId === props.socketId) usersRoom = room;
+            });
+            if (usersRoom !== undefined) break;
+        }
+
+        renderedQuestionServer[usersRoom] = props.renderedQuestion;
+        io.to(usersRoom).emit("renderedQuestionClient", renderedQuestionServer[usersRoom]);
         // console.log(renderedQuestionServer, "renderedQuestion");
     });
 
     socket.on("disconnect", (reason) => {
-        console.log(magenta, socket.id, "user disconnected", reason);
-        users = users.filter((user) => user.socketId !== socket.id);
-        io.to("room1").emit("newUser", users);
+        let usersRoom;
+        let userName;
+        for (const room in users) {
+            users[room].forEach((user) => {
+                if (user.socketId === socket.id) {
+                    usersRoom = room;
+                    userName = user.name;
+                }
+            });
+            if (usersRoom !== undefined) break;
+        }
+
+        console.log(magenta, `user ${userName} disconnected from room ${usersRoom}, reason: ${reason}`);
+        users[usersRoom] = users[usersRoom].filter((user) => user.socketId !== socket.id);
+
+        io.to(usersRoom).emit("newUser", users[usersRoom]);
+
+        if (users[usersRoom].length === 0) {
+            delete users[usersRoom];
+            delete renderedQuestionServer[usersRoom];
+        }
+
         console.log("users", users);
-        if (users.length === 0) renderedQuestionServer = "";
+        console.log("renderedQuestion", renderedQuestionServer);
     });
 });
 
