@@ -21,17 +21,45 @@ initializeApp({
     credential: cert(serviceAccount),
 });
 
+let questionsServer = {};
 const db = getFirestore();
 
 router.get("/questions", async (req, res, next) => {
+    const { serverCode, maxQuestions } = req.body;
     try {
         const snapshot = await db.collection("questions").get();
 
-        snapshot.forEach((doc) => {
-            // console.log(doc.id)
-            questions = Object.keys(doc.data()).sort();
-        });
+        let questions = [];
+        if (maxQuestions) {
+            snapshot.forEach((doc) => {
+                // console.log(doc.id)
+                // questions = Object.keys(doc.data()).sort();
+                let cat = doc.data();
+                let contador = 1;
+                for (const question in cat) {
+                    questions.push({
+                        question: question,
+                        addedBy: cat[question].addedBy,
+                    });
+                    contador++;
+                    if (contador > maxQuestions) break;
+                }
+            });
+        } else {
+            snapshot.forEach((doc) => {
+                // console.log(doc.id)
+                // questions = Object.keys(doc.data()).sort();
+                let cat = doc.data();
+                for (const question in cat) {
+                    questions.push({
+                        question: question,
+                        addedBy: cat[question].addedBy,
+                    });
+                }
+            });
+        }
 
+        if (serverCode !== undefined) questionsServer[serverCode] = questions;
         res.json(questions);
     } catch (error) {
         next(error);
@@ -39,19 +67,20 @@ router.get("/questions", async (req, res, next) => {
 });
 
 router.post("/new-question", async (req, res, next) => {
-    const { question, username } = req.body;
+    const { question, name, lastname } = req.body;
     try {
         const docRef = await db
             .collection("questions")
             .doc("cat1")
             .update({
                 [question]: {
-                    addedBy: username,
+                    addedBy: `${name} ${lastname}`,
                     timestamp: FieldValue.serverTimestamp(),
                 },
             });
 
-        res.send("new question added to firebase db");
+        console.log(`new question added by ${name} ${lastname}`);
+        res.send(`new question added by ${name} ${lastname}`);
     } catch (error) {
         next(error);
     }
@@ -59,7 +88,6 @@ router.post("/new-question", async (req, res, next) => {
 
 router.post("/new-questions", async (req, res, next) => {
     const { questions, username } = req.body;
-    console.log(questions);
     try {
         const batch = db.batch();
         const sfRef = db.collection("questions").doc("cat1");
@@ -74,6 +102,26 @@ router.post("/new-questions", async (req, res, next) => {
         await batch.commit();
 
         res.send(`${questions.length} new questions added to firebase db`);
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post("/questions-server", async (req, res, next) => {
+    const { serverCode } = req.body;
+    try {
+        res.json(questionsServer[serverCode]);
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post("/delete-questions", async (req, res, next) => {
+    const { serverCode } = req.body;
+    try {
+        delete questionsServer[serverCode];
+        console.log(`questions from room ${serverCode} deleted`);
+        res.send(`questions from room ${serverCode} deleted`);
     } catch (error) {
         next(error);
     }

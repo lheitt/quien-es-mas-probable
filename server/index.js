@@ -11,6 +11,7 @@ const io = require("socket.io")(server, {
         methods: ["GET", "POST"],
     },
 });
+const axios = require("axios");
 
 //console.log colors
 let yellow = "\x1b[33m%s\x1b[0m";
@@ -41,6 +42,23 @@ app.use("/", routes);
 let users = {};
 let renderedQuestionServer = {};
 
+let axiosBaseURL = process.env.HEROKU_URL || "http://localhost:3001";
+
+const getQuestions = async (serverCode, maxQuestions) => {
+    await axios({
+        method: "get",
+        url: `${axiosBaseURL}/questions`,
+        data: {
+            serverCode: serverCode,
+            maxQuestions: maxQuestions,
+        },
+    });
+};
+
+const deleteQuestions = async (serverCode) => {
+    await axios.post(`${axiosBaseURL}/delete-questions`, { serverCode: serverCode });
+};
+
 io.on("connection", (socket) => {
     socket.on("reload", (props) => {
         if (props.bolean) {
@@ -51,15 +69,13 @@ io.on("connection", (socket) => {
                 });
                 if (usersRoom !== undefined) break;
             }
-            io.to(usersRoom).emit("reload", users[usersRoom]);
+
+            io.to(usersRoom).emit("reload", { users: users[usersRoom], room: usersRoom });
             io.to(usersRoom).emit("renderedQuestionClient", renderedQuestionServer[usersRoom]);
         }
     });
 
-    socket.on("newUser", (newUser) => {
-        socket.join(newUser.room);
-        console.log(yellow, `user ${newUser.name} connected to room ${newUser.room}`);
-
+    socket.on("newUser", async (newUser) => {
         if (users.hasOwnProperty(newUser.room)) {
             users[newUser.room].push({
                 name: newUser.name,
@@ -72,12 +88,17 @@ io.on("connection", (socket) => {
                     socketId: newUser.socketId,
                 },
             ];
+
+            await getQuestions(newUser.room, newUser.maxQuestions);
         }
 
-        console.log("users", users);
-        console.log("renderedQuestion", renderedQuestionServer);
-        io.to(newUser.room).emit("newUser", users[newUser.room]);
+        socket.join(newUser.room);
+        console.log(yellow, `user ${newUser.name} connected to room ${newUser.room}`);
+
+        io.to(newUser.room).emit("newUser", { users: users[newUser.room], room: newUser.room });
         io.to(newUser.room).emit("renderedQuestionClient", renderedQuestionServer[newUser.room]);
+
+        console.log("users", users);
     });
 
     socket.on("renderedQuestionServer", (props) => {
@@ -110,15 +131,15 @@ io.on("connection", (socket) => {
         console.log(magenta, `user ${userName} disconnected from room ${usersRoom}, reason: ${reason}`);
         users[usersRoom] = users[usersRoom].filter((user) => user.socketId !== socket.id);
 
-        io.to(usersRoom).emit("newUser", users[usersRoom]);
+        io.to(usersRoom).emit("newUser", { users: users[usersRoom], room: usersRoom });
 
         if (users[usersRoom].length === 0) {
             delete users[usersRoom];
             delete renderedQuestionServer[usersRoom];
+            deleteQuestions(usersRoom);
         }
 
         console.log("users", users);
-        console.log("renderedQuestion", renderedQuestionServer);
     });
 });
 
