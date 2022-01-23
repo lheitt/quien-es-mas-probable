@@ -20,6 +20,7 @@ function NewQuestion() {
     const [input, setInput] = useState({
         question: "",
         name: "",
+        lastname: "",
     });
 
     const theme = createTheme({
@@ -27,6 +28,10 @@ function NewQuestion() {
             mode: isDark ? "dark" : "light",
         },
     });
+
+    const capitalizeFirstLetter = (string) => {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -43,12 +48,16 @@ function NewQuestion() {
 
         await axios.post("/new-question", {
             question: input.question,
-            username: input.name,
+            name: capitalizeFirstLetter(input.name),
+            lastname: capitalizeFirstLetter(input.lastname),
         });
 
         setLoading(false);
         setRenderAlert(true);
-        setInput({ question: "" });
+        setInput({
+            ...input,
+            question: "",
+        });
     };
 
     return (
@@ -89,7 +98,23 @@ function NewQuestion() {
                         autoComplete="true"
                         label="Nombre"
                         helperText={
-                            input.name.length > 0 ? "Será visible para los todos los jugadores" : "Completa el campo"
+                            input.name.length > 0
+                                ? "Será visible debajo de la pregunta junto con el apellido"
+                                : "Completa el campo"
+                        }
+                        onChange={handleChange}
+                        sx={{ width: "20em", marginBottom: "1em" }}
+                    />
+
+                    <TextField
+                        error={input.lastname.length > 0 ? false : true}
+                        name="lastname"
+                        autoComplete="true"
+                        label="Apellido"
+                        helperText={
+                            input.lastname.length > 0
+                                ? "Será visible debajo de la pregunta junto con el nombre"
+                                : "Completa el campo"
                         }
                         onChange={handleChange}
                         sx={{ width: "20em", marginBottom: "1em" }}
@@ -114,7 +139,11 @@ function NewQuestion() {
                         variant="contained"
                         onClick={handleSubmit}
                         loading={loading}
-                        disabled={input.question.length > 0 && input.name.length > 0 ? false : true}
+                        disabled={
+                            input.question.length >= 25 && input.name.length > 0 && input.lastname.length > 0
+                                ? false
+                                : true
+                        }
                         sx={{
                             marginTop: "1em",
                         }}

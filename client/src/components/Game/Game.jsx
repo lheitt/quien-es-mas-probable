@@ -32,24 +32,22 @@ function Game() {
             setUserSelected(undefined);
         });
 
-        socket.on("newUser", (users) => {
-            setUsers(users);
+        socket.on("newUser", (props) => {
+            setUsers(props.users);
             setUserSelected(undefined);
+            getQuestions(props.room);
         });
 
-        socket.on("reload", (users) => {
-            setUsers(users);
+        socket.on("reload", (props) => {
+            setUsers(props.users);
             setUserSelected(undefined);
-            getQuestions();
         });
-
-        getQuestions();
 
         actualTheme === "dark" ? setIsDark(true) : setIsDark(false);
     }, []);
 
-    const getQuestions = async () => {
-        const res = await axios.get("/questions");
+    const getQuestions = async (roomUser) => {
+        const res = await axios.post("/questions-server", { serverCode: roomUser });
         setQuestions(res.data);
     };
 
@@ -82,6 +80,10 @@ function Game() {
         navigate("/");
     };
 
+    const copyCode = async () => {
+        await navigator.clipboard.writeText(room);
+    };
+
     const handleSubmit = (e) => {
         // setRenderedQuestion(Math.round(Math.random() * (questions.length - 1)));
         if (renderedQuestion === null || renderedQuestion === questions.length - 1) {
@@ -109,11 +111,11 @@ function Game() {
                     }}
                 >
                     <Tooltip
-                        sx={{ position: "absolute", left: matches ? "85vw" : "75vw", top: "10vh" }}
+                        sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
                         disableFocusListener
                         title={`${room}`}
                     >
-                        <Button>Código de sala</Button>
+                        <Button onClick={copyCode}>Código de sala</Button>
                     </Tooltip>
 
                     <Fab
@@ -175,9 +177,21 @@ function Game() {
                             }}
                         >
                             {renderedQuestion !== null ? (
-                                <Typography variant="h4" component="h4" gutterBottom sx={{ textAlign: "center" }}>
-                                    {questions[renderedQuestion]}
-                                </Typography>
+                                <>
+                                    <Typography variant="h4" component="h4" gutterBottom sx={{ textAlign: "center" }}>
+                                        {questions[renderedQuestion].question}
+                                    </Typography>
+                                    {questions[renderedQuestion].addedBy !== "Default" ? (
+                                        <Typography
+                                            variant="h6"
+                                            component="h6"
+                                            gutterBottom
+                                            sx={{ textAlign: "center", marginBottom: "1em" }}
+                                        >{`(añadida por ${questions[renderedQuestion].addedBy})`}</Typography>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </>
                             ) : (
                                 <></>
                             )}

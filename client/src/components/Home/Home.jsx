@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@emotion/react";
-import { createTheme, Container, CssBaseline, Fab, TextField, Button } from "@mui/material";
+import { Box, createTheme, Container, CssBaseline, Fab, TextField, Button, Slider, Typography } from "@mui/material";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { Box } from "@mui/system";
+import axios from "axios";
 
 export let socket;
 const ENDPOINT = process.env.REACT_APP_API || "http://localhost:3001";
@@ -15,11 +15,13 @@ const ENDPOINT = process.env.REACT_APP_API || "http://localhost:3001";
 function Home() {
     useEffect(() => {
         actualTheme === "dark" ? setIsDark(true) : setIsDark(false);
+        getQuestions();
     }, []);
 
     const navigate = useNavigate();
     const actualTheme = localStorage.getItem("theme");
 
+    const [numberOfQuestions, setNumberOfQuestions] = useState(0);
     const [play, setPlay] = useState(false);
     const [playForm, setPlayForm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -27,6 +29,7 @@ function Home() {
     const [input, setInput] = useState({
         name: "",
         room: "",
+        maxQuestions: false,
     });
 
     const theme = createTheme({
@@ -47,6 +50,11 @@ function Home() {
             result += characters.charAt(Math.floor(Math.random() * characters.length));
         }
         return result;
+    };
+
+    const getQuestions = async () => {
+        const res = await axios.get("/questions");
+        setNumberOfQuestions(res.data.length);
     };
 
     const handleChange = (e) => {
@@ -79,6 +87,7 @@ function Home() {
                     name: input.name,
                     socketId: socket.id,
                     room: roomCode,
+                    maxQuestions: input.maxQuestions,
                 });
             });
 
@@ -130,6 +139,22 @@ function Home() {
                                         <ArrowBackIosNewIcon />
                                     </Fab>
 
+                                    <Box sx={{ width: "18em", marginBottom: "1em" }}>
+                                        <Typography id="slider-label" gutterBottom>
+                                            Preguntas
+                                        </Typography>
+
+                                        <Slider
+                                            name="maxQuestions"
+                                            defaultValue={numberOfQuestions}
+                                            min={10}
+                                            max={numberOfQuestions}
+                                            aria-labelledby="slider-label"
+                                            valueLabelDisplay="auto"
+                                            onChange={handleChange}
+                                        />
+                                    </Box>
+
                                     <TextField
                                         error={input.name.length > 0 ? false : true}
                                         name="name"
@@ -143,6 +168,7 @@ function Home() {
                                         onChange={handleChange}
                                         sx={{ width: "18em" }}
                                     />
+
                                     <LoadingButton
                                         variant="contained"
                                         onClick={handleSubmit}
