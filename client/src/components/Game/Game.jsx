@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 // import AddIcon from "@mui/icons-material/Add";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import axios from "axios";
 
 function Game() {
@@ -57,6 +58,7 @@ function Game() {
 
     const matches = useMediaQuery("(min-width:500px)");
 
+    const [tooltipRoom, setTooltipRoom] = useState("Copiar");
     const [open, setOpen] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [users, setUsers] = useState([]);
@@ -82,6 +84,7 @@ function Game() {
 
     const copyCode = async () => {
         await navigator.clipboard.writeText(room);
+        setTooltipRoom("Copiado!");
     };
 
     const handleSubmit = (e) => {
@@ -111,11 +114,14 @@ function Game() {
                     }}
                 >
                     <Tooltip
-                        sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
+                        sx={{ position: "absolute", left: matches ? "75vw" : "55vw", top: "10vh" }}
                         disableFocusListener
-                        title={`${room}`}
+                        title={`${tooltipRoom}`}
+                        onClose={() => setTooltipRoom("Copiar")}
                     >
-                        <Button onClick={copyCode}>Código de sala</Button>
+                        <Button onClick={copyCode} endIcon={<ContentCopyIcon />}>
+                            Código de sala: {room}
+                        </Button>
                     </Tooltip>
 
                     <Fab
@@ -197,7 +203,13 @@ function Game() {
                             )}
 
                             <Button variant="contained" onClick={handleSubmit}>
-                                {renderedQuestion === null ? "PRIMERA PREGUNTA" : "SIGUIENTE PREGUNTA"}
+                                {renderedQuestion === null
+                                    ? "PRIMERA PREGUNTA"
+                                    : renderedQuestion === questions.length - 2
+                                    ? "ÚLTIMA PREGUNTA"
+                                    : renderedQuestion === questions.length - 1
+                                    ? "VOLVER A LA PRIMER PREGUNTA"
+                                    : "SIGUIENTE PREGUNTA"}
                             </Button>
 
                             {renderedQuestion !== null ? (
