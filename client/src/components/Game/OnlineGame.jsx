@@ -95,6 +95,17 @@ function OnlineGame() {
         },
     });
 
+    const buttonTextTransformTheme = createTheme({
+        palette: {
+            mode: isDark ? "dark" : "light",
+        },
+        typography: {
+            button: {
+                textTransform: "none",
+            },
+        },
+    });
+
     const userButtonPressed = (key) => {
         if (selectedUser === key) {
             setSelectedUser(undefined);
@@ -139,16 +150,18 @@ function OnlineGame() {
                         color: "text.primary",
                     }}
                 >
-                    <Tooltip
-                        sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
-                        disableFocusListener
-                        title={`${tooltipRoom}`}
-                        onClose={() => setTooltipRoom("Copiar")}
-                    >
-                        <Button onClick={copyCode} endIcon={<ContentCopyIcon />}>
-                            Sala: {room}
-                        </Button>
-                    </Tooltip>
+                    <ThemeProvider theme={buttonTextTransformTheme}>
+                        <Tooltip
+                            sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
+                            disableFocusListener
+                            title={`${tooltipRoom}`}
+                            onClose={() => setTooltipRoom("Copiar")}
+                        >
+                            <Button onClick={copyCode} endIcon={<ContentCopyIcon />}>
+                                SALA: {room}
+                            </Button>
+                        </Tooltip>
+                    </ThemeProvider>
 
                     <Fab
                         sx={{ position: "absolute", left: "10vw", top: "10vh" }}
