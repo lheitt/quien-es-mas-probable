@@ -75,17 +75,29 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("username", (props) => {
+        let username;
+        users[props.room].forEach((user) => {
+            if (user.socketId === props.socketId) username = user.name;
+        });
+        io.to(props.room).emit("username", { socketId: props.socketId, username: username });
+    });
+
     socket.on("newUser", async (newUser) => {
         if (users.hasOwnProperty(newUser.room)) {
             users[newUser.room].push({
                 name: newUser.name,
                 socketId: newUser.socketId,
+                selectedUser: undefined,
+                vote: false,
             });
         } else {
             users[newUser.room] = [
                 {
                     name: newUser.name,
                     socketId: newUser.socketId,
+                    selectedUser: undefined,
+                    vote: false,
                 },
             ];
 
@@ -101,18 +113,46 @@ io.on("connection", (socket) => {
         console.log("users", users);
     });
 
-    socket.on("renderedQuestionServer", (props) => {
-        let usersRoom;
-        for (const room in users) {
-            users[room].forEach((user) => {
-                if (user.socketId === props.socketId) usersRoom = room;
-            });
-            if (usersRoom !== undefined) break;
-        }
+    socket.on("selectedUser", (props) => {
+        let userIndex = users[props.room].findIndex((user) => user.name === props.username);
+        users[props.room][userIndex].selectedUser = props.selectedUser;
 
-        renderedQuestionServer[usersRoom] = props.renderedQuestion;
-        io.to(usersRoom).emit("renderedQuestionClient", renderedQuestionServer[usersRoom]);
-        // console.log(renderedQuestionServer, "renderedQuestion");
+        let results = [];
+        let everyoneVoted = true;
+        users[props.room].forEach((user, i) => {
+            if (user.selectedUser === undefined) {
+                everyoneVoted = false;
+                users[props.room][i].vote = false;
+            } else {
+                results.push({
+                    username: user.name,
+                    selectedUser: user.selectedUser,
+                });
+                users[props.room][i].vote = true;
+            }
+        });
+
+        if (everyoneVoted && renderedQuestionServer.hasOwnProperty(props.room)) {
+            io.to(props.room).emit("showResults", results);
+            io.to(props.room).emit("noVoteUsers", users[props.room]);
+            io.to(props.room).emit("nextQuestionEnabled", true);
+        } else {
+            io.to(props.room).emit("noVoteUsers", users[props.room]);
+            io.to(props.room).emit("nextQuestionEnabled", false);
+        }
+    });
+
+    socket.on("renderedQuestionServer", (props) => {
+        renderedQuestionServer[props.room] = props.renderedQuestion;
+        users[props.room].forEach((user, index) => {
+            users[props.room][index].selectedUser = undefined;
+            users[props.room][index].vote = false;
+            io.to(props.room).emit("noVoteUsers", users[props.room]);
+        });
+
+        io.to(props.room).emit("renderedQuestionClient", renderedQuestionServer[props.room]);
+        io.to(props.room).emit("nextQuestionEnabled", false);
+        console.log(users, "renderedQuestion");
     });
 
     socket.on("disconnect", (reason) => {
