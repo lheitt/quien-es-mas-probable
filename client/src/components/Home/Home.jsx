@@ -2,7 +2,22 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@emotion/react";
-import { Box, createTheme, Container, CssBaseline, Fab, TextField, Button, Slider, Typography } from "@mui/material";
+import {
+    Box,
+    createTheme,
+    Container,
+    CssBaseline,
+    Fab,
+    TextField,
+    Button,
+    Slider,
+    Typography,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+} from "@mui/material";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -21,10 +36,10 @@ function Home() {
     const navigate = useNavigate();
     const actualTheme = localStorage.getItem("theme");
 
+    const [roomNoExist, setRoomNoExist] = useState(false);
     const [numberOfQuestions, setNumberOfQuestions] = useState(0);
     const [play, setPlay] = useState(false);
     const [playForm, setPlayForm] = useState(false);
-    const [gameMode, setGameMode] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [input, setInput] = useState({
@@ -70,7 +85,7 @@ function Home() {
         setLoading(true);
         const timer = setTimeout(() => {
             let roomCode;
-            if (input.room === "") roomCode = codeGenerator(5);
+            if (playForm === "create") roomCode = codeGenerator(5);
             else roomCode = input.room;
 
             socket = io(ENDPOINT, {
@@ -84,16 +99,36 @@ function Home() {
             });
 
             socket.on("connect", () => {
-                socket.emit("newUser", {
-                    name: input.name,
-                    socketId: socket.id,
-                    room: roomCode,
-                    maxQuestions: input.maxQuestions,
-                    gameMode: gameMode,
-                });
+                if (playForm === "join") {
+                    socket.emit("roomExist", roomCode, (noExist) => {
+                        if (noExist) {
+                            setLoading(false);
+                            setInput({
+                                ...input,
+                                room: "",
+                            });
+                            socket.disconnect()
+                            setRoomNoExist(true);
+                        } else {
+                            setLoading(false);
+                            socket.emit("newUser", {
+                                name: input.name,
+                                socketId: socket.id,
+                                room: roomCode,
+                            });
+                            navigate(`/game/${roomCode}`);
+                        }
+                    });
+                } else {
+                    socket.emit("newUser", {
+                        name: input.name,
+                        socketId: socket.id,
+                        room: roomCode,
+                        maxQuestions: input.maxQuestions,
+                    });
+                    navigate(`/game/${roomCode}`);
+                }
             });
-
-            gameMode === "local" ? navigate(`/game/${roomCode}`) : navigate(`/online-game/${roomCode}`);
         }, 2000);
         return () => clearTimeout(timer);
     };
@@ -123,7 +158,7 @@ function Home() {
                                 justifyContent: "center",
                             }}
                         >
-                            {gameMode === "local" || gameMode === "online" ? (
+                            {playForm === "create" ? (
                                 <Box
                                     sx={{
                                         display: "flex",
@@ -132,159 +167,111 @@ function Home() {
                                         justifyContent: "center",
                                     }}
                                 >
-                                    {playForm === "create" ? (
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                            }}
-                                        >
-                                            <Fab
-                                                sx={{ position: "absolute", left: "10vw", top: "10vh" }}
-                                                onClick={() => setPlayForm(false)}
-                                                color="primary"
-                                                aria-label="Volver atrás"
-                                            >
-                                                <ArrowBackIosNewIcon />
-                                            </Fab>
+                                    <Fab
+                                        sx={{ position: "absolute", left: "10vw", top: "10vh" }}
+                                        onClick={() => setPlayForm(false)}
+                                        color="primary"
+                                        aria-label="Volver atrás"
+                                    >
+                                        <ArrowBackIosNewIcon />
+                                    </Fab>
 
-                                            <Box sx={{ width: "18em", marginBottom: "1em" }}>
-                                                <Typography id="slider-label" gutterBottom>
-                                                    Preguntas
-                                                </Typography>
+                                    <Box sx={{ width: "18em", marginBottom: "1em" }}>
+                                        <Typography id="slider-label" gutterBottom>
+                                            Preguntas
+                                        </Typography>
 
-                                                <Slider
-                                                    name="maxQuestions"
-                                                    defaultValue={numberOfQuestions}
-                                                    min={10}
-                                                    max={numberOfQuestions}
-                                                    aria-labelledby="slider-label"
-                                                    valueLabelDisplay="auto"
-                                                    onChange={handleChange}
-                                                />
-                                            </Box>
+                                        <Slider
+                                            name="maxQuestions"
+                                            defaultValue={numberOfQuestions}
+                                            min={10}
+                                            max={numberOfQuestions}
+                                            aria-labelledby="slider-label"
+                                            valueLabelDisplay="auto"
+                                            onChange={handleChange}
+                                        />
+                                    </Box>
 
-                                            <TextField
-                                                error={input.name.length > 0 ? false : true}
-                                                name="name"
-                                                autoComplete="true"
-                                                label="Nombre"
-                                                helperText={
-                                                    input.name.length > 0
-                                                        ? "Será visible para los demás jugadores"
-                                                        : "Completa el campo para comenzar el juego"
-                                                }
-                                                onChange={handleChange}
-                                                sx={{ width: "18em" }}
-                                            />
+                                    <TextField
+                                        error={input.name.length > 0 ? false : true}
+                                        name="name"
+                                        autoComplete="true"
+                                        label="Nombre"
+                                        helperText={
+                                            input.name.length > 0
+                                                ? "Será visible para los demás jugadores"
+                                                : "Completa el campo para comenzar el juego"
+                                        }
+                                        onChange={handleChange}
+                                        sx={{ width: "18em" }}
+                                    />
 
-                                            <LoadingButton
-                                                variant="contained"
-                                                onClick={handleSubmit}
-                                                loading={loading}
-                                                disabled={input.name.length > 0 ? false : true}
-                                                sx={{
-                                                    marginTop: "1em",
-                                                }}
-                                            >
-                                                Jugar
-                                            </LoadingButton>
-                                        </Box>
-                                    ) : playForm === "join" ? (
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                            }}
-                                        >
-                                            <Fab
-                                                sx={{ position: "absolute", left: "10vw", top: "10vh" }}
-                                                onClick={() => setPlayForm(false)}
-                                                color="primary"
-                                                aria-label="Volver atrás"
-                                            >
-                                                <ArrowBackIosNewIcon />
-                                            </Fab>
+                                    <LoadingButton
+                                        variant="contained"
+                                        onClick={handleSubmit}
+                                        loading={loading}
+                                        disabled={input.name.length > 0 ? false : true}
+                                        sx={{
+                                            marginTop: "1em",
+                                        }}
+                                    >
+                                        Jugar
+                                    </LoadingButton>
+                                </Box>
+                            ) : playForm === "join" ? (
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Fab
+                                        sx={{ position: "absolute", left: "10vw", top: "10vh" }}
+                                        onClick={() => setPlayForm(false)}
+                                        color="primary"
+                                        aria-label="Volver atrás"
+                                    >
+                                        <ArrowBackIosNewIcon />
+                                    </Fab>
 
-                                            <TextField
-                                                error={input.name.length > 0 ? false : true}
-                                                name="name"
-                                                autoComplete="true"
-                                                label="Nombre"
-                                                helperText={
-                                                    input.name.length > 0
-                                                        ? "Será visible para los demás jugadores"
-                                                        : "Completa el campo para comenzar el juego"
-                                                }
-                                                onChange={handleChange}
-                                                sx={{ width: "18em", marginBottom: "1em" }}
-                                            />
+                                    <TextField
+                                        error={input.name.length > 0 ? false : true}
+                                        name="name"
+                                        autoComplete="true"
+                                        label="Nombre"
+                                        helperText={
+                                            input.name.length > 0
+                                                ? "Será visible para los demás jugadores"
+                                                : "Completa el campo para comenzar el juego"
+                                        }
+                                        onChange={handleChange}
+                                        sx={{ width: "18em", marginBottom: "1em" }}
+                                    />
 
-                                            <TextField
-                                                error={input.room.length > 0 ? false : true}
-                                                name="room"
-                                                label="Código de la sala"
-                                                helperText={
-                                                    input.room.length > 0
-                                                        ? ""
-                                                        : "Completa el campo para comenzar el juego"
-                                                }
-                                                onChange={handleChange}
-                                                sx={{ width: "18em" }}
-                                            />
-                                            <LoadingButton
-                                                variant="contained"
-                                                onClick={handleSubmit}
-                                                loading={loading}
-                                                disabled={input.name.length > 0 ? false : true}
-                                                sx={{
-                                                    marginTop: "1em",
-                                                }}
-                                            >
-                                                Jugar
-                                            </LoadingButton>
-                                        </Box>
-                                    ) : (
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                            }}
-                                        >
-                                            <Fab
-                                                sx={{ position: "absolute", left: "10vw", top: "10vh" }}
-                                                onClick={() => setGameMode(false)}
-                                                color="primary"
-                                                aria-label="Volver atrás"
-                                            >
-                                                <ArrowBackIosNewIcon />
-                                            </Fab>
-
-                                            <Button
-                                                variant="contained"
-                                                size="large"
-                                                onClick={() => setPlayForm("create")}
-                                                sx={{ fontSize: "1.2em", marginBottom: "1em" }}
-                                            >
-                                                Crear Sala
-                                            </Button>
-
-                                            <Button
-                                                variant="contained"
-                                                size="large"
-                                                onClick={() => setPlayForm("join")}
-                                                sx={{ fontSize: "1.2em", marginBottom: "1em" }}
-                                            >
-                                                Unirse
-                                            </Button>
-                                        </Box>
-                                    )}
+                                    <TextField
+                                        error={input.room.length > 0 ? false : true}
+                                        name="room"
+                                        value={input.room}
+                                        label="Código de la sala"
+                                        helperText={
+                                            input.room.length > 0 ? "" : "Completa el campo para comenzar el juego"
+                                        }
+                                        onChange={handleChange}
+                                        sx={{ width: "18em" }}
+                                    />
+                                    <LoadingButton
+                                        variant="contained"
+                                        onClick={handleSubmit}
+                                        loading={loading}
+                                        disabled={input.name.length > 0 && input.room.length > 0 ? false : true}
+                                        sx={{
+                                            marginTop: "1em",
+                                        }}
+                                    >
+                                        Jugar
+                                    </LoadingButton>
                                 </Box>
                             ) : (
                                 <Box
@@ -307,19 +294,19 @@ function Home() {
                                     <Button
                                         variant="contained"
                                         size="large"
-                                        onClick={() => setGameMode("local")}
+                                        onClick={() => setPlayForm("create")}
                                         sx={{ fontSize: "1.2em", marginBottom: "1em" }}
                                     >
-                                        Local
+                                        Crear Sala
                                     </Button>
 
                                     <Button
                                         variant="contained"
                                         size="large"
-                                        onClick={() => setGameMode("online")}
+                                        onClick={() => setPlayForm("join")}
                                         sx={{ fontSize: "1.2em", marginBottom: "1em" }}
                                     >
-                                        Online
+                                        Unirse
                                     </Button>
                                 </Box>
                             )}
@@ -361,6 +348,26 @@ function Home() {
                             </Button>
                         </Box>
                     )}
+
+                    <Dialog
+                        open={roomNoExist}
+                        onClose={() => setRoomNoExist(false)}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                    >
+                        <DialogTitle id="alert-dialog-title">{"La sala no existe"}</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText id="alert-dialog-description">
+                                Prueba ingresando el código de la sala nuevamente respetando las mayúsculas y minúsculas
+                                o crea una sala nueva
+                            </DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => setRoomNoExist(false)} autoFocus>
+                                Aceptar
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 </Container>
             </React.Fragment>
         </ThemeProvider>

@@ -129,7 +129,7 @@ function NewQuestion() {
                             input.question.length === 0
                                 ? "Completa el campo"
                                 : input.question.length >= 25
-                                ? "Nada de preguntas sexuales eh 😝"
+                                ? "Nada de preguntas sexuales 😝"
                                 : "La pregunta debe contener mas de 25 caracteres"
                         }
                         onChange={handleChange}

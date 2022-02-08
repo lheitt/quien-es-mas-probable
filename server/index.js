@@ -60,6 +60,11 @@ const deleteQuestions = async (serverCode) => {
 };
 
 io.on("connection", (socket) => {
+    socket.on("roomExist", (roomCode, callback) => {
+        if (!users.hasOwnProperty(roomCode)) callback(true);
+        else callback(false);
+    });
+
     socket.on("reload", (props) => {
         if (props.bolean) {
             let usersRoom;
@@ -168,18 +173,22 @@ io.on("connection", (socket) => {
             if (usersRoom !== undefined) break;
         }
 
-        console.log(magenta, `user ${userName} disconnected from room ${usersRoom}, reason: ${reason}`);
-        users[usersRoom] = users[usersRoom].filter((user) => user.socketId !== socket.id);
+        if (userName !== undefined) {
+            console.log(magenta, `user ${userName} disconnected from room ${usersRoom}, reason: ${reason}`);
+            users[usersRoom] = users[usersRoom].filter((user) => user.socketId !== socket.id);
 
-        io.to(usersRoom).emit("newUser", { users: users[usersRoom], room: usersRoom });
+            io.to(usersRoom).emit("newUser", { users: users[usersRoom], room: usersRoom });
 
-        if (users[usersRoom].length === 0) {
-            delete users[usersRoom];
-            delete renderedQuestionServer[usersRoom];
-            deleteQuestions(usersRoom);
+            if (users[usersRoom].length === 0) {
+                delete users[usersRoom];
+                delete renderedQuestionServer[usersRoom];
+                deleteQuestions(usersRoom);
+            }
+
+            console.log("users", users);
+        } else {
+            console.log(magenta, `a user with socketId ${socket.id} disconnected from server, reason: ${reason}`);
         }
-
-        console.log("users", users);
     });
 });
 

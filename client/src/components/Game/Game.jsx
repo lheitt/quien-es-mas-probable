@@ -36,6 +36,7 @@ function Game() {
         socket.on("renderedQuestionClient", (renderedQuestion) => {
             setRenderedQuestion(renderedQuestion);
             setSelectedUser(undefined);
+            setShowResults(false);
         });
 
         socket.on("newUser", (props) => {
@@ -50,8 +51,17 @@ function Game() {
             setSelectedUser(undefined);
         });
 
+        socket.on("nextQuestionEnabled", (bolean) => {
+            if (bolean) setNextQuestionEnabled(true);
+            else setNextQuestionEnabled(false);
+        });
+
+        socket.on("showResults", (recivedResults) => {
+            setResults(recivedResults);
+            setShowResults(true);
+        });
+
         socket.on("noVoteUsers", (recivedUsers) => {
-            console.log(recivedUsers, "recivedUsers");
             setUsers(recivedUsers);
         });
     }, []);
@@ -75,6 +85,9 @@ function Game() {
     const [renderedQuestion, setRenderedQuestion] = useState(null);
     const [selectedUser, setSelectedUser] = useState(undefined);
     const [username, setUsername] = useState("");
+    const [nextQuestionEnabled, setNextQuestionEnabled] = useState(true);
+    const [results, setResults] = useState([]);
+    const [showResults, setShowResults] = useState(false);
 
     const theme = createTheme({
         palette: {
@@ -159,55 +172,78 @@ function Game() {
                         <HomeRoundedIcon />
                     </Fab>
 
-                    {users.length !== 0 ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                flexWrap: "wrap",
-                                gap: "2em",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                marginBottom: "4em",
-                            }}
-                        >
-                            {users.map((user, key) => (
-                                <Box
-                                    key={key}
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        flexWrap: "wrap",
-                                        gap: ".5em",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        position: "relative",
-                                    }}
-                                >
-                                    <Button
-                                        variant="contained"
-                                        size="large"
-                                        color={selectedUser === key ? "success" : "error"}
-                                        onClick={() => userButtonPressed(key)}
-                                        sx={{ fontSize: "2em" }}
-                                    >
-                                        {user.name}
-                                    </Button>
-
-                                    {renderedQuestion === null ? (
-                                        <></>
-                                    ) : user.vote === true ? (
-                                        <></>
-                                    ) : (
-                                        <Typography sx={{ position: "absolute", top: "6em" }} variant="overline">
-                                            {user.name === username ? "No votaste" : "No votó"}
-                                        </Typography>
-                                    )}
-                                </Box>
+                    {showResults ? (
+                        <Box sx={{ marginBottom: "1em" }}>
+                            {results.map((user, key) => (
+                                <Typography variant="h5" component="h5" gutterBottom sx={{ textAlign: "center" }}>
+                                    {user.username === username && user.selectedUser === username
+                                        ? `Te votaste a ti mismo`
+                                        : user.username === username
+                                        ? `Votaste a ${user.selectedUser}`
+                                        : user.selectedUser === username
+                                        ? `${user.username} te votó`
+                                        : user.username === user.selectedUser
+                                        ? `${user.username} se votó a sí mismo`
+                                        : `${user.username} votó a ${user.selectedUser}`}
+                                </Typography>
                             ))}
                         </Box>
                     ) : (
-                        <></>
+                        <Box>
+                            {users.length !== 0 ? (
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        flexWrap: "wrap",
+                                        gap: "2em",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        marginBottom: "4em",
+                                    }}
+                                >
+                                    {users.map((user, key) => (
+                                        <Box
+                                            key={key}
+                                            sx={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                flexWrap: "wrap",
+                                                gap: ".5em",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                position: "relative",
+                                            }}
+                                        >
+                                            <Button
+                                                variant="contained"
+                                                size="large"
+                                                color={selectedUser === key ? "success" : "error"}
+                                                onClick={() => userButtonPressed(key)}
+                                                sx={{ fontSize: "2em" }}
+                                            >
+                                                {user.name}
+                                            </Button>
+
+                                            {renderedQuestion === null ? (
+                                                <></>
+                                            ) : user.vote === true ? (
+                                                <></>
+                                            ) : (
+                                                <Typography
+                                                    sx={{ position: "absolute", top: "6em" }}
+                                                    variant="overline"
+                                                >
+                                                    {user.name === username ? "No votaste" : "No votó"}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <></>
+                            )}
+                        </Box>
                     )}
 
                     {questions.length !== 0 ? (
@@ -239,7 +275,11 @@ function Game() {
                                 <></>
                             )}
 
-                            <Button variant="contained" onClick={handleSubmit}>
+                            <Button
+                                disabled={!nextQuestionEnabled && renderedQuestion !== null}
+                                variant="contained"
+                                onClick={handleSubmit}
+                            >
                                 {renderedQuestion === null
                                     ? "PRIMERA PREGUNTA"
                                     : renderedQuestion === questions.length - 2
