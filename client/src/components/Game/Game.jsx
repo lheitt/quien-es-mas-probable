@@ -49,6 +49,7 @@ function Game() {
         socket.on("reload", (props) => {
             setUsers(props.users);
             setSelectedUser(undefined);
+            setNextQuestionEnabled(false);
         });
 
         socket.on("nextQuestionEnabled", (bolean) => {
@@ -64,6 +65,10 @@ function Game() {
         socket.on("noVoteUsers", (recivedUsers) => {
             setUsers(recivedUsers);
         });
+
+        return () => {
+            socket.disconnect();
+        };
     }, []);
 
     const getQuestions = async (roomUser) => {
