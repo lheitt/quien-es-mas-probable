@@ -24,9 +24,8 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import axios from "axios";
 
-function Game() {
+function Game({ isDark }) {
     useEffect(() => {
-        actualTheme === "dark" ? setIsDark(true) : setIsDark(false);
         socket.emit("reload", { bolean: true, socketId: socket.id });
 
         socket.on("username", (props) => {
@@ -77,14 +76,12 @@ function Game() {
     };
 
     const navigate = useNavigate();
-    const actualTheme = localStorage.getItem("theme");
     const { room } = useParams();
 
     const matches = useMediaQuery("(min-width:500px)");
 
     const [tooltipRoom, setTooltipRoom] = useState("Copiar");
     const [open, setOpen] = useState(false);
-    const [isDark, setIsDark] = useState(false);
     const [users, setUsers] = useState([]);
     const [questions, setQuestions] = useState([]);
     const [renderedQuestion, setRenderedQuestion] = useState(null);
@@ -93,12 +90,6 @@ function Game() {
     const [nextQuestionEnabled, setNextQuestionEnabled] = useState(true);
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
-
-    const theme = createTheme({
-        palette: {
-            mode: isDark ? "dark" : "light",
-        },
-    });
 
     const buttonTextTransformTheme = createTheme({
         palette: {
@@ -141,195 +132,190 @@ function Game() {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <React.Fragment>
-                <CssBaseline />
-                <Container
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100vh",
-                        bgcolor: "background.default",
-                        color: "text.primary",
-                    }}
+        <React.Fragment>
+            <CssBaseline />
+            <Container
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100vh",
+                    bgcolor: "background.default",
+                    color: "text.primary",
+                }}
+            >
+                <ThemeProvider theme={buttonTextTransformTheme}>
+                    <Tooltip
+                        sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
+                        disableFocusListener
+                        title={`${tooltipRoom}`}
+                        onClose={() => setTooltipRoom("Copiar")}
+                    >
+                        <Button onClick={copyCode} endIcon={<ContentCopyIcon />}>
+                            SALA: {room}
+                        </Button>
+                    </Tooltip>
+                </ThemeProvider>
+
+                <Fab
+                    sx={{ position: "absolute", left: "10vw", top: "10vh" }}
+                    onClick={() => setOpen(true)}
+                    color="primary"
+                    aria-label="Volver al inicio"
                 >
-                    <ThemeProvider theme={buttonTextTransformTheme}>
-                        <Tooltip
-                            sx={{ position: "absolute", left: matches ? "80vw" : "55vw", top: "10vh" }}
-                            disableFocusListener
-                            title={`${tooltipRoom}`}
-                            onClose={() => setTooltipRoom("Copiar")}
-                        >
-                            <Button onClick={copyCode} endIcon={<ContentCopyIcon />}>
-                                SALA: {room}
-                            </Button>
-                        </Tooltip>
-                    </ThemeProvider>
+                    <HomeRoundedIcon />
+                </Fab>
 
-                    <Fab
-                        sx={{ position: "absolute", left: "10vw", top: "10vh" }}
-                        onClick={() => setOpen(true)}
-                        color="primary"
-                        aria-label="Volver al inicio"
-                    >
-                        <HomeRoundedIcon />
-                    </Fab>
-
-                    {showResults ? (
-                        <Box sx={{ marginBottom: "1em" }}>
-                            {results.map((user, key) => (
-                                <Typography variant="h5" component="h5" gutterBottom sx={{ textAlign: "center" }}>
-                                    {user.username === username && user.selectedUser === username
-                                        ? `Te votaste a ti mismo`
-                                        : user.username === username
-                                        ? `Votaste a ${user.selectedUser}`
-                                        : user.selectedUser === username
-                                        ? `${user.username} te votó`
-                                        : user.username === user.selectedUser
-                                        ? `${user.username} se votó a sí mismo`
-                                        : `${user.username} votó a ${user.selectedUser}`}
-                                </Typography>
-                            ))}
-                        </Box>
-                    ) : (
-                        <Box>
-                            {users.length !== 0 ? (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        flexDirection: "row",
-                                        flexWrap: "wrap",
-                                        gap: "2em",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        marginBottom: "4em",
-                                    }}
-                                >
-                                    {users.map((user, key) => (
-                                        <Box
-                                            key={key}
-                                            sx={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                flexWrap: "wrap",
-                                                gap: ".5em",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                position: "relative",
-                                            }}
-                                        >
-                                            <Button
-                                                variant="contained"
-                                                size="large"
-                                                color={selectedUser === key ? "success" : "error"}
-                                                onClick={() => userButtonPressed(key)}
-                                                sx={{ fontSize: "2em" }}
-                                            >
-                                                {user.name}
-                                            </Button>
-
-                                            {renderedQuestion === null ? (
-                                                <></>
-                                            ) : user.vote === true ? (
-                                                <></>
-                                            ) : (
-                                                <Typography
-                                                    sx={{ position: "absolute", top: "6em" }}
-                                                    variant="overline"
-                                                >
-                                                    {user.name === username ? "No votaste" : "No votó"}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    ))}
-                                </Box>
-                            ) : (
-                                <></>
-                            )}
-                        </Box>
-                    )}
-
-                    {questions.length !== 0 ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                        >
-                            {renderedQuestion !== null ? (
-                                <>
-                                    <Typography variant="h4" component="h4" gutterBottom sx={{ textAlign: "center" }}>
-                                        {questions[renderedQuestion].question}
-                                    </Typography>
-                                    {questions[renderedQuestion].addedBy !== "Default" ? (
-                                        <Typography
-                                            variant="h6"
-                                            component="h6"
-                                            gutterBottom
-                                            sx={{ textAlign: "center", marginBottom: "1em" }}
-                                        >{`(añadida por ${questions[renderedQuestion].addedBy})`}</Typography>
-                                    ) : (
-                                        <></>
-                                    )}
-                                </>
-                            ) : (
-                                <></>
-                            )}
-
-                            <Button
-                                disabled={!nextQuestionEnabled && renderedQuestion !== null}
-                                variant="contained"
-                                onClick={handleSubmit}
+                {showResults ? (
+                    <Box sx={{ marginBottom: "1em" }}>
+                        {results.map((user, key) => (
+                            <Typography variant="h5" component="h5" gutterBottom sx={{ textAlign: "center" }}>
+                                {user.username === username && user.selectedUser === username
+                                    ? `Te votaste a ti mismo`
+                                    : user.username === username
+                                    ? `Votaste a ${user.selectedUser}`
+                                    : user.selectedUser === username
+                                    ? `${user.username} te votó`
+                                    : user.username === user.selectedUser
+                                    ? `${user.username} se votó a sí mismo`
+                                    : `${user.username} votó a ${user.selectedUser}`}
+                            </Typography>
+                        ))}
+                    </Box>
+                ) : (
+                    <Box>
+                        {users.length !== 0 ? (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    flexWrap: "wrap",
+                                    gap: "2em",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    marginBottom: "4em",
+                                }}
                             >
-                                {renderedQuestion === null
-                                    ? "PRIMERA PREGUNTA"
-                                    : renderedQuestion === questions.length - 2
-                                    ? "ÚLTIMA PREGUNTA"
-                                    : renderedQuestion === questions.length - 1
-                                    ? "VOLVER A LA PRIMER PREGUNTA"
-                                    : "SIGUIENTE PREGUNTA"}
-                            </Button>
+                                {users.map((user, key) => (
+                                    <Box
+                                        key={key}
+                                        sx={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            flexWrap: "wrap",
+                                            gap: ".5em",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            position: "relative",
+                                        }}
+                                    >
+                                        <Button
+                                            variant="contained"
+                                            size="large"
+                                            color={selectedUser === key ? "success" : "error"}
+                                            onClick={() => userButtonPressed(key)}
+                                            sx={{ fontSize: "2em" }}
+                                        >
+                                            {user.name}
+                                        </Button>
 
-                            {renderedQuestion !== null ? (
-                                <Typography variant="subtitle1" gutterBottom>
-                                    {`${renderedQuestion + 1}/${questions.length}`}
-                                </Typography>
-                            ) : (
-                                <></>
-                            )}
-                        </Box>
-                    ) : (
-                        <Box sx={{ display: "flex" }}>
-                            <CircularProgress />
-                        </Box>
-                    )}
+                                        {renderedQuestion === null ? (
+                                            <></>
+                                        ) : user.vote === true ? (
+                                            <></>
+                                        ) : (
+                                            <Typography sx={{ position: "absolute", top: "6em" }} variant="overline">
+                                                {user.name === username ? "No votaste" : "No votó"}
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                ))}
+                            </Box>
+                        ) : (
+                            <></>
+                        )}
+                    </Box>
+                )}
 
-                    <Dialog
-                        open={open}
-                        onClose={() => setOpen(false)}
-                        aria-labelledby="alert-dialog-title"
-                        aria-describedby="alert-dialog-description"
+                {questions.length !== 0 ? (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
                     >
-                        <DialogTitle id="alert-dialog-title">{"¿Volver al menú?"}</DialogTitle>
-                        <DialogContent>
-                            <DialogContentText id="alert-dialog-description">
-                                Te saldrás de la sala actual
-                            </DialogContentText>
-                        </DialogContent>
-                        <DialogActions>
-                            <Button onClick={() => setOpen(false)}>Cancelar</Button>
-                            <Button onClick={homeButtonPressed} autoFocus>
-                                Salir
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                </Container>
-            </React.Fragment>
-        </ThemeProvider>
+                        {renderedQuestion !== null ? (
+                            <>
+                                <Typography variant="h4" component="h4" gutterBottom sx={{ textAlign: "center" }}>
+                                    {questions[renderedQuestion].question}
+                                </Typography>
+                                {questions[renderedQuestion].addedBy !== "Default" ? (
+                                    <Typography
+                                        variant="h6"
+                                        component="h6"
+                                        gutterBottom
+                                        sx={{ textAlign: "center", marginBottom: "1em" }}
+                                    >{`(añadida por ${questions[renderedQuestion].addedBy})`}</Typography>
+                                ) : (
+                                    <></>
+                                )}
+                            </>
+                        ) : (
+                            <></>
+                        )}
+
+                        <Button
+                            disabled={!nextQuestionEnabled && renderedQuestion !== null}
+                            variant="contained"
+                            onClick={handleSubmit}
+                        >
+                            {renderedQuestion === null
+                                ? "PRIMERA PREGUNTA"
+                                : renderedQuestion === questions.length - 2
+                                ? "ÚLTIMA PREGUNTA"
+                                : renderedQuestion === questions.length - 1
+                                ? "VOLVER A LA PRIMER PREGUNTA"
+                                : "SIGUIENTE PREGUNTA"}
+                        </Button>
+
+                        {renderedQuestion !== null ? (
+                            <Typography variant="subtitle1" gutterBottom>
+                                {`${renderedQuestion + 1}/${questions.length}`}
+                            </Typography>
+                        ) : (
+                            <></>
+                        )}
+                    </Box>
+                ) : (
+                    <Box sx={{ display: "flex" }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+
+                <Dialog
+                    open={open}
+                    onClose={() => setOpen(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">{"¿Volver al menú?"}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            Te saldrás de la sala actual
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setOpen(false)}>Cancelar</Button>
+                        <Button onClick={homeButtonPressed} autoFocus>
+                            Salir
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Container>
+        </React.Fragment>
     );
 }
 
