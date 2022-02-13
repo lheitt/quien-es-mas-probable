@@ -44,8 +44,8 @@ export const darkTheme = {
 
 export let socket;
 
-// export const ENDPOINT = "https://quien-es-mas-probable-lh.herokuapp.com";
-export const ENDPOINT = "http://192.168.0.29:3001";
+// export const ENDPOINT = "http://192.168.0.29:3001";
+export const ENDPOINT = "https://quien-es-mas-probable-lh.herokuapp.com";
 
 export default function Home({ navigation }) {
     useEffect(() => {

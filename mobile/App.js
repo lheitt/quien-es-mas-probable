@@ -10,19 +10,21 @@ import { BackHandler } from "react-native";
 import { lightTheme, darkTheme } from "./components/Home/Home";
 import { Button, Dialog, Paragraph, Portal, Provider as PaperProvider } from "react-native-paper";
 
-const isConnected = async () => {
-    const res = await getNetworkStateAsync();
-    if (res.isConnected === true) return true;
-    else return false;
-};
-
-const Stack = createNativeStackNavigator();
 export default function App() {
     useEffect(() => {
         getTheme();
+        getConnection();
     }, []);
 
+    const Stack = createNativeStackNavigator();
     const [isDark, setIsDark] = useState(false);
+    const [isConnected, setIsConnected] = useState(undefined);
+
+    const getConnection = async () => {
+        const res = await getNetworkStateAsync();
+        if (res.isConnected === true) setIsConnected(true);
+        else setIsConnected(false);
+    };
 
     const getTheme = async () => {
         const themeSelected = await AsyncStorage.getItem("theme");
@@ -31,7 +33,9 @@ export default function App() {
 
     return (
         <>
-            {isConnected() ? (
+            {isConnected === undefined ? (
+                <></>
+            ) : isConnected ? (
                 <NavigationContainer>
                     <Stack.Navigator
                         screenOptions={{
