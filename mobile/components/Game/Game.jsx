@@ -212,7 +212,7 @@ export default function Game({ navigation, route }) {
                                                 style={{
                                                     color: isDark ? "#fff" : "#000",
                                                     position: "absolute",
-                                                    top: "38%",
+                                                    top: 55,
                                                 }}
                                             >
                                                 {user.name === username ? "NO VOTASTE" : "NO VOTÓ"}
