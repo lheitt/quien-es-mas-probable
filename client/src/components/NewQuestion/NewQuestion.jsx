@@ -81,8 +81,9 @@ function NewQuestion() {
                 <TextField
                     error={input.name.length > 0 ? false : true}
                     name="name"
-                    autoComplete="true"
+                    autoComplete="name"
                     label="Nombre"
+                    value={input.name}
                     helperText={
                         input.name.length > 0
                             ? "Será visible debajo de la pregunta junto con el apellido"
@@ -95,8 +96,9 @@ function NewQuestion() {
                 <TextField
                     error={input.lastname.length > 0 ? false : true}
                     name="lastname"
-                    autoComplete="true"
+                    autoComplete="name-family"
                     label="Apellido"
+                    value={input.lastname}
                     helperText={
                         input.lastname.length > 0
                             ? "Será visible debajo de la pregunta junto con el nombre"
@@ -109,6 +111,7 @@ function NewQuestion() {
                 <TextField
                     error={input.question.length < 25 ? true : false}
                     name="question"
+                    autoComplete="off"
                     label="Pregunta"
                     value={input.question}
                     helperText={

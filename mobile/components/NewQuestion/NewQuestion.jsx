@@ -88,6 +88,7 @@ export default function NewQuestion({ navigation }) {
 
                 <TextInput
                     label="Nombre"
+                    autoComplete="name"
                     mode="outlined"
                     error={input.name.length > 0 ? false : true}
                     value={input.name}
@@ -102,6 +103,7 @@ export default function NewQuestion({ navigation }) {
 
                 <TextInput
                     label="Apellido"
+                    autoComplete="name-family"
                     mode="outlined"
                     error={input.lastname.length > 0 ? false : true}
                     value={input.lastname}
@@ -116,6 +118,7 @@ export default function NewQuestion({ navigation }) {
 
                 <TextInput
                     label="Pregunta"
+                    autoComplete="off"
                     mode="outlined"
                     error={input.question.length < 25 ? true : false}
                     value={input.question}
