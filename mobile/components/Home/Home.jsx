@@ -3,7 +3,21 @@ import io from "socket.io-client";
 import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import { Button, FAB, DefaultTheme, DarkTheme, Appbar, Provider as PaperProvider } from "react-native-paper";
+import {
+    Button,
+    FAB,
+    DefaultTheme,
+    DarkTheme,
+    Appbar,
+    TextInput,
+    HelperText,
+    Paragraph,
+    Dialog,
+    Portal,
+    Title,
+    Provider as PaperProvider,
+} from "react-native-paper";
+import Slider from "@react-native-community/slider";
 import axios from "axios";
 
 export const lightTheme = {
@@ -13,6 +27,7 @@ export const lightTheme = {
         primary: "#1976d2",
         accent: "#1976d2",
         error: "#d32f2f",
+        sucess: "#2e7d32",
     },
 };
 
@@ -23,6 +38,7 @@ export const darkTheme = {
         primary: "#90caf9",
         accent: "#90caf9",
         error: "#f44336",
+        sucess: "#66bb6a",
     },
 };
 
@@ -64,6 +80,14 @@ export default function Home({ navigation }) {
         setNumberOfQuestions(res.data.length);
     };
 
+    const playFormCreate = () => {
+        setPlayForm("create");
+        setInput({
+            ...input,
+            maxQuestions: numberOfQuestions,
+        });
+    };
+
     const codeGenerator = (length) => {
         let result = "";
         let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -84,8 +108,8 @@ export default function Home({ navigation }) {
         setLoading(true);
         const timer = setTimeout(() => {
             let roomCode;
-            // if (playForm === "create") roomCode = codeGenerator(5);
-            // else roomCode = input.room;
+            if (playForm === "create") roomCode = codeGenerator(5);
+            else roomCode = input.room;
 
             socket = io(ENDPOINT, {
                 // reconnectionDelayMax: 10000,
@@ -98,36 +122,44 @@ export default function Home({ navigation }) {
             });
 
             socket.on("connect", () => {
-                // if (playForm === "join") {
-                //     socket.emit("roomExist", roomCode, (noExist) => {
-                //         if (noExist) {
-                //             setLoading(false);
-                //             setInput({
-                //                 ...input,
-                //                 room: "",
-                //             });
-                //             socket.disconnect();
-                //             setRoomNoExist(true);
-                //         } else {
-                //             setLoading(false);
-                //             socket.emit("newUser", {
-                //                 name: input.name,
-                //                 socketId: socket.id,
-                //                 room: roomCode,
-                //             });
-                //             navigate(`/game/${roomCode}`);
-                //         }
-                //     });
-                // } else {
-                //     socket.emit("newUser", {
-                //         name: input.name,
-                //         socketId: socket.id,
-                //         room: roomCode,
-                //         maxQuestions: input.maxQuestions,
-                //     });
-                //     navigate(`/game/${roomCode}`);
-                // }
-                console.log("Me conecte");
+                if (playForm === "join") {
+                    socket.emit("roomExist", roomCode, (noExist) => {
+                        if (noExist) {
+                            setLoading(false);
+                            setInput({
+                                ...input,
+                                room: "",
+                            });
+                            socket.disconnect();
+                            setRoomNoExist(true);
+                        } else {
+                            setLoading(false);
+                            socket.emit("newUser", {
+                                name: input.name,
+                                socketId: socket.id,
+                                room: roomCode,
+                            });
+                            setPlayForm(false);
+                            setPlay(false);
+                            navigation.navigate("Game", {
+                                room: roomCode,
+                            });
+                        }
+                    });
+                } else {
+                    setLoading(false);
+                    socket.emit("newUser", {
+                        name: input.name,
+                        socketId: socket.id,
+                        room: roomCode,
+                        maxQuestions: input.maxQuestions,
+                    });
+                    setPlayForm(false);
+                    setPlay(false);
+                    navigation.navigate("Game", {
+                        room: roomCode,
+                    });
+                }
             });
         }, 2000);
         return () => clearTimeout(timer);
@@ -141,6 +173,11 @@ export default function Home({ navigation }) {
             justifyContent: "center",
             padding: 15,
         },
+        input: {
+            marginBottom: 5,
+            marginTop: 10,
+            width: "95%",
+        },
     });
 
     return (
@@ -153,7 +190,45 @@ export default function Home({ navigation }) {
                                 <Appbar.BackAction onPress={() => setPlayForm(false)} />
                                 <Appbar.Content title="Crear sala" />
                             </Appbar.Header>
-                            <View style={styles.container}></View>
+                            <View style={styles.container}>
+                                <Title>{`Preguntas: ${input.maxQuestions}`}</Title>
+                                <Slider
+                                    style={{ width: "100%", marginBottom: 15 }}
+                                    value={input.maxQuestions}
+                                    step={1}
+                                    minimumValue={10}
+                                    maximumValue={numberOfQuestions}
+                                    thumbTintColor={isDark ? "#90caf9" : "#1976d2"}
+                                    minimumTrackTintColor={isDark ? "#90caf9" : "#1976d2"}
+                                    maximumTrackTintColor={isDark ? "#90caf9" : "#1976d2"}
+                                    onValueChange={(value) => handleChange(value, "maxQuestions")}
+                                />
+
+                                <TextInput
+                                    label="Nombre"
+                                    autoComplete="name"
+                                    mode="outlined"
+                                    error={input.name.length > 0 ? false : true}
+                                    value={input.name}
+                                    onChangeText={(name) => handleChange(name, "name")}
+                                    style={styles.input}
+                                />
+                                <HelperText type={input.name.length > 0 ? "info" : "error"}>
+                                    {input.name.length > 0
+                                        ? "Será visible para los demás jugadores"
+                                        : "Completa el campo para comenzar el juego"}
+                                </HelperText>
+
+                                <Button
+                                    mode="contained"
+                                    loading={loading}
+                                    disabled={loading ? true : input.name.length > 0 ? false : true}
+                                    onPress={() => handleSubmit()}
+                                    style={{ marginTop: 15 }}
+                                >
+                                    Jugar
+                                </Button>
+                            </View>
 
                             <StatusBar style="light" />
                         </>
@@ -163,7 +238,47 @@ export default function Home({ navigation }) {
                                 <Appbar.BackAction onPress={() => setPlayForm(false)} />
                                 <Appbar.Content title="Unirse a sala" />
                             </Appbar.Header>
-                            <View style={styles.container}></View>
+                            <View style={styles.container}>
+                                <TextInput
+                                    label="Nombre"
+                                    autoComplete="name"
+                                    mode="outlined"
+                                    error={input.name.length > 0 ? false : true}
+                                    value={input.name}
+                                    onChangeText={(name) => handleChange(name, "name")}
+                                    style={styles.input}
+                                />
+                                <HelperText type={input.name.length > 0 ? "info" : "error"}>
+                                    {input.name.length > 0
+                                        ? "Será visible para los demás jugadores"
+                                        : "Completa el campo para comenzar el juego"}
+                                </HelperText>
+
+                                <TextInput
+                                    label="Código de la sala"
+                                    autoComplete="off"
+                                    mode="outlined"
+                                    error={input.room.length > 0 ? false : true}
+                                    value={input.room}
+                                    onChangeText={(room) => handleChange(room, "room")}
+                                    style={styles.input}
+                                />
+                                <HelperText type={input.room.length > 0 ? "info" : "error"}>
+                                    {input.room.length > 0 ? "" : "Completa el campo para comenzar el juego"}
+                                </HelperText>
+
+                                <Button
+                                    mode="contained"
+                                    loading={loading}
+                                    disabled={
+                                        loading ? true : input.name.length > 0 && input.room.length > 0 ? false : true
+                                    }
+                                    onPress={() => handleSubmit()}
+                                    style={{ marginTop: 15 }}
+                                >
+                                    Jugar
+                                </Button>
+                            </View>
 
                             <StatusBar style="light" />
                         </>
@@ -174,11 +289,7 @@ export default function Home({ navigation }) {
                                 <Appbar.Content title="Jugar" />
                             </Appbar.Header>
                             <View style={styles.container}>
-                                <Button
-                                    style={{ marginBottom: 15 }}
-                                    mode="contained"
-                                    onPress={() => setPlayForm("create")}
-                                >
+                                <Button style={{ marginBottom: 15 }} mode="contained" onPress={() => playFormCreate()}>
                                     Crear Sala
                                 </Button>
                                 <Button mode="contained" onPress={() => setPlayForm("join")}>
@@ -209,6 +320,21 @@ export default function Home({ navigation }) {
                     <StatusBar style={isDark ? "light" : "dark"} />
                 </View>
             )}
+
+            <Portal>
+                <Dialog visible={roomNoExist} onDismiss={() => setRoomNoExist(false)}>
+                    <Dialog.Title>La sala no existe</Dialog.Title>
+                    <Dialog.Content>
+                        <Paragraph>
+                            Prueba ingresando el código de la sala nuevamente respetando las mayúsculas y minúsculas o
+                            crea una sala nueva
+                        </Paragraph>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setRoomNoExist(false)}>Aceptar</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </PaperProvider>
     );
 }

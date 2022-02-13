@@ -62,6 +62,14 @@ function Home({ setIsDarkApp, isDark }) {
         setNumberOfQuestions(res.data.length);
     };
 
+    const playFormCreate = () => {
+        setPlayForm("create");
+        setInput({
+            ...input,
+            maxQuestions: numberOfQuestions,
+        });
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setInput({
@@ -166,7 +174,7 @@ function Home({ setIsDarkApp, isDark }) {
 
                                 <Box sx={{ width: "18em", marginBottom: "1em" }}>
                                     <Typography id="slider-label" gutterBottom>
-                                        Preguntas
+                                        {`Preguntas: ${input.maxQuestions}`}
                                     </Typography>
 
                                     <Slider
@@ -183,7 +191,8 @@ function Home({ setIsDarkApp, isDark }) {
                                 <TextField
                                     error={input.name.length > 0 ? false : true}
                                     name="name"
-                                    autoComplete="true"
+                                    autoComplete="name"
+                                    value={input.name}
                                     label="Nombre"
                                     helperText={
                                         input.name.length > 0
@@ -227,7 +236,8 @@ function Home({ setIsDarkApp, isDark }) {
                                 <TextField
                                     error={input.name.length > 0 ? false : true}
                                     name="name"
-                                    autoComplete="true"
+                                    autoComplete="name"
+                                    value={input.name}
                                     label="Nombre"
                                     helperText={
                                         input.name.length > 0
@@ -241,6 +251,7 @@ function Home({ setIsDarkApp, isDark }) {
                                 <TextField
                                     error={input.room.length > 0 ? false : true}
                                     name="room"
+                                    autoComplete="off"
                                     value={input.room}
                                     label="Código de la sala"
                                     helperText={input.room.length > 0 ? "" : "Completa el campo para comenzar el juego"}
@@ -280,7 +291,7 @@ function Home({ setIsDarkApp, isDark }) {
                                 <Button
                                     variant="contained"
                                     size="large"
-                                    onClick={() => setPlayForm("create")}
+                                    onClick={() => playFormCreate()}
                                     sx={{ fontSize: "1.2em", marginBottom: "1em" }}
                                 >
                                     Crear Sala
@@ -341,7 +352,7 @@ function Home({ setIsDarkApp, isDark }) {
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                 >
-                    <DialogTitle id="alert-dialog-title">{"La sala no existe"}</DialogTitle>
+                    <DialogTitle id="alert-dialog-title">La sala no existe</DialogTitle>
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
                             Prueba ingresando el código de la sala nuevamente respetando las mayúsculas y minúsculas o

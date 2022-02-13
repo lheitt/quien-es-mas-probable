@@ -170,7 +170,7 @@ function Game({ isDark }) {
                 {showResults ? (
                     <Box sx={{ marginBottom: "1em" }}>
                         {results.map((user, key) => (
-                            <Typography variant="h5" component="h5" gutterBottom sx={{ textAlign: "center" }}>
+                            <Typography key={key} variant="h5" component="h5" gutterBottom sx={{ textAlign: "center" }}>
                                 {user.username === username && user.selectedUser === username
                                     ? `Te votaste a ti mismo`
                                     : user.username === username
@@ -249,7 +249,12 @@ function Game({ isDark }) {
                     >
                         {renderedQuestion !== null ? (
                             <>
-                                <Typography variant="h4" component="h4" gutterBottom sx={{ textAlign: "center" }}>
+                                <Typography
+                                    variant="h4"
+                                    component="h4"
+                                    gutterBottom={questions[renderedQuestion].addedBy !== "Default" ? false : true}
+                                    sx={{ textAlign: "center" }}
+                                >
                                     {questions[renderedQuestion].question}
                                 </Typography>
                                 {questions[renderedQuestion].addedBy !== "Default" ? (
@@ -301,7 +306,7 @@ function Game({ isDark }) {
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                 >
-                    <DialogTitle id="alert-dialog-title">{"¿Volver al menú?"}</DialogTitle>
+                    <DialogTitle id="alert-dialog-title">¿Volver al menú?</DialogTitle>
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
                             Te saldrás de la sala actual
